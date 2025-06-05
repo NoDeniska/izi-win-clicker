@@ -1,53 +1,35 @@
 <script setup>
 import bottomBar from '../components/bottomBar.vue'
 import { useUserStore } from '@/stores/user'
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
 const userStore = useUserStore()
 const isAnimating = ref(false)
 const clickInterval = ref(null)
 const lastClickTime = ref(0)
 const clickTimestamps = ref([])
-
-// Максимальное количество кликов в секунду
-const MAX_CPS = 16
-// Время блокировки при превышении лимита (мс)
-const PENALTY_TIME = 10000
-// Флаг блокировки
 const isBlocked = ref(false)
 
-const profilePhoto = computed(() => {
-  return userStore.user?.photo_url || '../assets/default-avatar.png'
-})
+// Константы
+const MAX_CPS = 16
+const PENALTY_TIME = 10000
 
-const userName = computed(() => {
-  return userStore.user?.first_name || 'Гость'
-})
+// Геттеры
+const profilePhoto = computed(() => userStore.user?.photo_url || '../assets/default-avatar.png')
+const userName = computed(() => userStore.user?.first_name || 'Гость')
+const userId = computed(() => userStore.user?.id)
 
-const userId = computed(() => {
-  return userStore.user?.id
-})
-
-const balance = computed(() => {
-  return userStore.formattedBalance
-})
-
-const handleCoinClick = async (e) => {
+const handleCoinClick = (e) => {
   const now = Date.now()
 
-  // Проверка на блокировку
+  // Проверка блокировки
   if (isBlocked.value || isAnimating.value) {
     e.preventDefault()
     return
   }
 
-  if (e.type === 'touchstart') {
-    e.preventDefault()
-  }
-
   // Проверка скорости кликов
   clickTimestamps.value.push(now)
-  // Оставляем только клики за последнюю секунду
   clickTimestamps.value = clickTimestamps.value.filter((t) => now - t < 1000)
 
   if (clickTimestamps.value.length > MAX_CPS) {
@@ -56,14 +38,12 @@ const handleCoinClick = async (e) => {
   }
 
   // Защита от двойных кликов
-  if (now - lastClickTime.value < 100) {
-    return
-  }
+  if (now - lastClickTime.value < 100) return
   lastClickTime.value = now
 
+  // Обработка клика
   isAnimating.value = true
-  userStore.incrementClickCount()
-  userStore.setBalance(userStore.balance + 1)
+  userStore.addClick()
 
   setTimeout(() => {
     isAnimating.value = false
@@ -78,7 +58,6 @@ const blockUserTemporarily = () => {
   }, PENALTY_TIME)
 }
 
-// Запускаем интервал для отправки кликов
 const startClickInterval = () => {
   clickInterval.value = setInterval(() => {
     if (userId.value && userStore.clickCount > 0) {
@@ -89,13 +68,13 @@ const startClickInterval = () => {
 
 onMounted(() => {
   startClickInterval()
+  if (userId.value) {
+    userStore.fetchBalance(userId.value)
+  }
 })
 
 onUnmounted(() => {
-  if (clickInterval.value) {
-    clearInterval(clickInterval.value)
-  }
-
+  clearInterval(clickInterval.value)
   if (userId.value && userStore.clickCount > 0) {
     userStore.sendClicks(userId.value)
   }
@@ -116,7 +95,9 @@ onUnmounted(() => {
     </div>
 
     <div class="balance-container">
-      <span class="balance-amount">{{ balance }}</span>
+      <span class="balance-amount" :class="{ 'balance-update': isAnimating }">
+        {{ userStore.formattedBalance }}
+      </span>
       <span class="balance-currency">coin</span>
     </div>
 
@@ -129,6 +110,7 @@ onUnmounted(() => {
       @touchstart="handleCoinClick"
       @touchend.prevent
     />
+
     <bottomBar />
   </div>
 </template>
@@ -142,11 +124,6 @@ onUnmounted(() => {
   height: 100vh;
   width: 100%;
   position: relative;
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  -khtml-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
   user-select: none;
 }
 
@@ -165,12 +142,18 @@ onUnmounted(() => {
   font-family: yandex-bold;
   font-size: 36px;
   color: white;
+  transition: transform 0.1s;
+}
+
+.balance-update {
+  transform: scale(1.1);
+  color: #ffc324;
 }
 
 .balance-currency {
   font-family: yandex-bold;
   font-size: 36px;
-  color: #ffc324; /* Золотой цвет */
+  color: #ffc324;
 }
 
 .coin-image {
@@ -179,7 +162,6 @@ onUnmounted(() => {
   margin-bottom: 20px;
   cursor: pointer;
   transition: transform 0.05s;
-  -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
 
@@ -198,7 +180,6 @@ onUnmounted(() => {
   border-radius: 10px;
   z-index: 100;
   font-family: yandex-bold;
-  text-align: center;
 }
 
 .coin-blocked {
