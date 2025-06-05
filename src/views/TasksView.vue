@@ -1,0 +1,111 @@
+<template>
+  <div class="container">
+    <div class="header">
+      <h1 class="title">Задания</h1>
+      <p class="subtitle">
+        Выполняйте задания, и получайте <span class="reward-text">награду</span>
+      </p>
+    </div>
+  </div>
+</template>
+
+<script>
+import { useUserStore } from '../stores/user.js'
+import { computed } from 'vue'
+
+export default {
+  data() {
+    return {
+      showBackButton: false,
+      isPressed: false,
+    }
+  },
+  setup() {
+    const userStore = useUserStore()
+    const userId = computed(() => userStore.user?.id)
+
+    return {
+      userId,
+    }
+  },
+  mounted() {
+    if (window.Telegram && Telegram.WebApp) {
+      this.initTelegramBackButton()
+    } else {
+      this.showBackButton = true
+    }
+  },
+  methods: {
+    initTelegramBackButton() {
+      const BackButton = Telegram.WebApp.BackButton
+      BackButton.show()
+
+      const handleBack = () => {
+        this.redirectToHome()
+        BackButton.hide()
+      }
+
+      BackButton.onClick(handleBack)
+      Telegram.WebApp.onEvent('backButtonClicked', handleBack)
+    },
+    handleBackClick() {
+      this.redirectToHome()
+      this.showBackButton = false
+    },
+    redirectToHome() {
+      this.$router.push('/')
+    },
+    copyLink() {
+      const link = `https://t.me/IziWinCoinBot?start=${this.userId}`
+      navigator.clipboard.writeText(link).catch((err) => {
+        console.error('Ошибка при копировании: ', err)
+      })
+    },
+    scaleDown() {
+      this.isPressed = true
+    },
+    scaleUp() {
+      this.isPressed = false
+    },
+  },
+  beforeUnmount() {
+    if (window.Telegram && Telegram.WebApp) {
+      Telegram.WebApp.BackButton.offClick()
+      Telegram.WebApp.offEvent('backButtonClicked')
+    }
+  },
+}
+</script>
+
+<style scoped>
+.container {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.header {
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.title {
+  font-family: yandex-bold;
+  font-size: 24px;
+  color: white;
+  margin: 0;
+}
+
+.reward-text {
+  color: #ffc324;
+}
+
+.subtitle {
+  font-family: yandex-medium;
+  margin-top: 10px;
+  font-size: 14px;
+  color: white;
+  text-align: left;
+}
+</style>
