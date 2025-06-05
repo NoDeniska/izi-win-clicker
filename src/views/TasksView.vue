@@ -6,6 +6,19 @@
         Выполняйте задания, и получайте <span class="reward-text">награду</span>
       </p>
     </div>
+    <div class="rectangle">
+      <div class="content">
+        <div class="text-content">
+          <div class="top-text">
+            <span class="invite-text">Подписаться на канал</span>
+          </div>
+          <div class="bottom-text">
+            <span class="coin-amount">4,000</span>
+            <span class="coin-text">coin</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -107,5 +120,50 @@ export default {
   font-size: 14px;
   color: white;
   text-align: left;
+}
+
+.rectangle {
+  width: 100%;
+  min-height: 60px;
+  background: #21244f;
+  border: 1px solid #2e58ad;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  padding: 20px 10px;
+}
+
+.text-content {
+  display: flex;
+  flex-direction: column;
+  margin-left: 10px;
+}
+
+.top-text {
+  margin-bottom: 5px;
+}
+
+.invite-text {
+  color: white;
+  font-family: yandex-medium;
+  font-size: 16px;
+}
+
+.bottom-text {
+  display: flex;
+  align-items: baseline;
+}
+
+.coin-amount {
+  color: #ffffff;
+  font-size: 18px;
+  font-family: yandex-bold;
+  margin-right: 5px;
+}
+
+.coin-text {
+  color: #ffc324;
+  font-family: yandex-medium;
+  font-size: 14px;
 }
 </style>
