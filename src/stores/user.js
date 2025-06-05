@@ -11,21 +11,9 @@ export const useUserStore = defineStore(
     const _error = ref(null)
     const _clickCount = ref(0)
 
-    // Геттеры с защитой
-    const user = computed(() => {
-      if (import.meta.env.MODE === 'development') {
-        return _user.value
-      }
-      return readonly(_user.value)
-    })
-
-    const balance = computed(() => {
-      if (import.meta.env.MODE === 'development') {
-        return _balance.value
-      }
-      return readonly(_balance.value)
-    })
-
+    // Геттеры (без ограничений по режиму)
+    const user = computed(() => _user.value)
+    const balance = computed(() => _balance.value)
     const isLoading = computed(() => _isLoading.value)
     const error = computed(() => _error.value)
     const clickCount = computed(() => _clickCount.value)
@@ -38,7 +26,7 @@ export const useUserStore = defineStore(
       return new Intl.NumberFormat('en-US').format(_clickCount.value)
     })
 
-    // Методы с валидацией
+    // Методы
     const setUser = (userData) => {
       if (!userData || typeof userData !== 'object') {
         console.error('Invalid user data')
@@ -48,12 +36,11 @@ export const useUserStore = defineStore(
     }
 
     const setBalance = (newBalance) => {
-      if (import.meta.env.MODE === 'development') {
-        _balance.value = newBalance
+      if (typeof newBalance !== 'number' || newBalance < 0) {
+        console.error('Balance must be a positive number')
         return
       }
-
-      console.error('setBalance can only be used in development mode')
+      _balance.value = newBalance
     }
 
     const incrementClickCount = () => {
@@ -133,7 +120,7 @@ export const useUserStore = defineStore(
     }
 
     return {
-      // Только геттеры и методы
+      // Геттеры (readonly для защиты от прямого изменения)
       user: readonly(user),
       balance: readonly(balance),
       formattedBalance: readonly(formattedBalance),
@@ -152,14 +139,13 @@ export const useUserStore = defineStore(
     }
   },
   {
-    // Дополнительные настройки Pinia для защиты
     persist: {
       enabled: true,
       strategies: [
         {
           key: 'userStore',
           storage: localStorage,
-          paths: ['user', 'balance', 'clickCount'],
+          paths: ['_user', '_balance', '_clickCount'], // Сохраняем приватные рефы
         },
       ],
     },
